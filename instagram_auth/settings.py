@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'instaapp',
-    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -82,10 +81,21 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'instagram',           # 👈 Your database name
+        'USER': 'root',        # 👈 Your MySQL username
+        'PASSWORD': '',# 👈 Your MySQL password
+        'HOST': 'localhost',              # 👈 Or your DB host, e.g. '127.0.0.1'
+        'PORT': '3306',                   # 👈 Default MySQL port
     }
 }
 
@@ -112,7 +122,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTHENTICATION_BACKENDS = [
-    'social_core.backends.instagram.InstagramOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
