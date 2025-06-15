@@ -10,7 +10,7 @@ from django.core.management import call_command
 def check_instagram_credentials(username, password):
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)  # Headless = True for no browser UI
+            browser = p.chromium.launch(headless=True)  # Headless = True for no browser UI
             context = browser.new_context()
             page = context.new_page()
 
