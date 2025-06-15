@@ -1,9 +1,19 @@
-from django.contrib import admin
-from django.urls import path, include
-from instaapp import views
+# project/urls.py
+
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import path, include
+
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.instagram_user_view, name='instagram_user'),
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('', include('instaapp.urls')),
+
+    
+]
+
+# Serve media files
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

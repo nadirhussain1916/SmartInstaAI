@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-^baredo@4py=(i6l=w0o6*7%u$*u%p#mbf2+(o@$()b#lh%qrl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'instaapp',
-    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -70,16 +69,37 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "instagram_auth.wsgi.application"
 
+# settings.py
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'instagram',           # 👈 Your database name
+        'USER': 'root',        # 👈 Your MySQL username
+        'PASSWORD': '',# 👈 Your MySQL password
+        'HOST': 'localhost',              # 👈 Or your DB host, e.g. '127.0.0.1'
+        'PORT': '3306',                   # 👈 Default MySQL port
     }
 }
+
+
 
 
 # Password validation
@@ -102,7 +122,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTHENTICATION_BACKENDS = [
-    'social_core.backends.instagram.InstagramOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
