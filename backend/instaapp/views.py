@@ -1,5 +1,3 @@
-# instagram_app/views.py
-
 import datetime
 import requests
 import instaloader
