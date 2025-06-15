@@ -8,8 +8,8 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 urlpatterns = [
-    path('instagram/get-instagram-user/', InstagramUserAPIView.as_view(), name='instagram-get-user'),
     path('instagram/signin-user/', CustomSignInView.as_view(), name='token_obtain_pair'),      # Sign In
     path('instagram/signin-user/refresh/', TokenRefreshView.as_view(), name='token_refresh'),     # Refresh
     path("instagram/fetch-userData/", InstagramFetchData.as_view(), name="instagram-fetch-data"),
+    path('instagram/get-instagram-user/', InstagramUserAPIView.as_view(), name='instagram-get-user'),
 ]

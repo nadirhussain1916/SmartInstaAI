@@ -44,7 +44,7 @@ Server will be available at: http://127.0.0.1:8000
 🔌 API Endpoints
 Method	Endpoint	Description
 POST	http://127.0.0.1:8000/instagram/get-instagram-user/	Fetch Instagram profile data
-POST	http://127.0.0.1:8000/instagram/signup-user/	Register new Django user from IG profile
+POST	http://127.0.0.1:8000instagram/fetch-userData/	call this api with access token to fecth user data and save in db 
 POST	http://127.0.0.1:8000/instagram/signin-user/ Login and receive JWT tokens
 POST	http://127.0.0.1:8000/instagram/signin-user/refresh/	Refresh expired access token
 
