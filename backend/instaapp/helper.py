@@ -6,6 +6,9 @@ import datetime
 from django.core.files.base import ContentFile
 from asgiref.sync import sync_to_async
 from django.core.management import call_command
+from django.utils.timezone import now
+from django.shortcuts import get_object_or_404
+from .models import Instagram_User, InstagramPost
 
 def check_instagram_credentials(username, password):
     try:
@@ -167,3 +170,83 @@ def save_user_and_posts(username,password, full_name, followers, post_count, pro
         InstagramPost(user=user_obj, post_url=link) for link in post_links
     ])
     print(f"\n✅ IG data saved for: {username}")
+   
+
+def get_post_image_and_likes(url):
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+
+            page.goto(url, timeout=60000)
+
+            # Try to locate images
+            page.wait_for_selector("img", timeout=15000)
+            all_imgs = page.locator("img")
+
+            count = all_imgs.count()
+            img_src = ""
+
+            for i in range(count):
+                alt_text = all_imgs.nth(i).get_attribute("alt")
+                if alt_text and alt_text.startswith("Photo by"):
+                    img_src = all_imgs.nth(i).get_attribute("src")
+                    break
+
+            if not img_src and count > 0:
+                img_src = all_imgs.first.get_attribute("src") or ""
+
+            # Locate likes
+            try:
+                page.wait_for_selector('span.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1hl2dhg.x16tdsg8.x1vvkbs', timeout=15000)
+                likes_text = page.locator('span.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1hl2dhg.x16tdsg8.x1vvkbs').first.inner_text()
+                likes = int(likes_text.replace(',', '').split()[0]) if likes_text and likes_text.split()[0].isdigit() else 0
+            except:
+                likes = 0
+
+            browser.close()
+            return img_src, likes
+    except Exception as e:
+        print(f"Error fetching post details: {e}")
+        return "", 0
+
+def get_and_save_post_detail(username):
+    user = get_object_or_404(Instagram_User, username=username)
+    
+    posts = InstagramPost.objects.filter(user=user)
+    
+    for post in posts:
+        print(f"Processing: {post.post_url}")
+        
+        try:
+            img_url, likes = get_post_image_and_likes(post.post_url)
+
+            # Default fallback values
+            if not img_url:
+                img_url = ""
+            if not likes or not likes.isdigit():
+                likes = 0
+            else:
+                likes = int(likes.replace(",", ""))
+
+            shortcode = post.post_url.rstrip('/').split('/')[-1]
+            timestamp = now().strftime("%Y%m%d%H%M%S")
+            filename = f"{shortcode}_{timestamp}_post.jpg"
+
+            if img_url:
+                img_response = requests.get(img_url)
+                if img_response.status_code == 200:
+                    post.thumbnail_url.save(filename, ContentFile(img_response.content), save=False)
+                else:
+                    print(f"⚠️ Could not download image for {shortcode}")
+            else:
+                print(f"⚠️ No image found for {shortcode}")
+
+            post.media_url = img_url
+            post.likes = likes
+            post.shortcode = shortcode
+            post.save()
+            print(f"✅ Saved: {shortcode}")
+
+        except Exception as e:
+            print(f"❌ Error while processing {post.post_url}: {e}")

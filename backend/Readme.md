@@ -81,12 +81,22 @@ python manage.py runserver
 
 ## 8. API Endpoints & Testing
 
-### Authentication
+# 📸 Instagram API (Django + DRF)
+
+This API enables authentication and interaction with Instagram user data including profile info, posts, and carousel generation.
+
+---
+
+## 🔐 Authentication
+
 - **Sign In:**
   - `POST /instagram/signin-user/`
   - **Body:**
     ```json
-    { "username": "<your_username>", "password": "<your_password>" }
+    {
+      "username": "<your_username>",
+      "password": "<your_password>"
+    }
     ```
   - **Response:** JWT `access` and `refresh` tokens
 
@@ -94,25 +104,75 @@ python manage.py runserver
   - `POST /instagram/signin-user/refresh/`
   - **Body:**
     ```json
-    { "refresh": "<refresh_token>" }
+    {
+      "refresh": "<refresh_token>"
+    }
     ```
+- **Response:** JWT `access`
+---
 
-### Instagram Profile Fetch
+## 📥 Instagram Profile Fetch
+
 - **Fetch Profile:**
-  - `POST /instagram/get-instagram-user/`
-  - **Body:**
-    ```json
-    { "username": "<instagram_username>" }
-    ```
-  - **Response:** Profile data (username, full name, followers, posts, profile_pic)
+  - `GET /instagram/get-instagram-user/`
+  - **Response:** List of saved Instagram users
 
-### Fetch & Save User Data (Requires Auth)
+---
+
+## 📦 Fetch & Save User Data (Requires Auth)
+
 - **Fetch & Save:**
   - `POST /instagram/fetch-userData/`
   - **Headers:**
     - `Authorization: Bearer <access_token>`
-  - **Body:** _Empty_
-  - **Response:** Success message
+
+  - **Response:** Profile and posts saved in DB
+
+---
+
+## 👤 Instagram User Profile
+
+- **Get User Profile:**
+  - `GET /instagram/user-profile/`
+  - **Headers:**
+    - `Authorization: Bearer <access_token>`
+  - **Response:** Profile details (bio, followers, following, posts, profile picture, etc.)
+
+---
+
+## 🖼️ Instagram User Posts
+
+- **Get User Posts:**
+ - **Headers:**
+    - `Authorization: Bearer <access_token>`
+  - `GET /instagram/user-posts/`
+  - **Response:** List of user's post URLs, media, likes, etc.
+
+---
+
+## 🎠 Generate Carousel from Posts
+
+- **Generate Carousel:**
+  - `POST /instagram/generate-carousel/`
+  - **Headers:**
+    - `Authorization: Bearer <access_token>`
+  - **Body:**
+    ```json
+    {
+  "content_type": "Humble",
+  "description": "How I built my first startup with no funding and minimal experience.",
+  "slides": 5,
+  "inspiration": "Naval Ravikant's tweetstorm on building wealth."
+    }
+
+    ```
+  - **Response:** URLs or links to generated carousel images
+
+---
+
+## ⚠️ Notes
+
+- Ensure JWT `access_token` is included for protected routes:
 
 ---
 
