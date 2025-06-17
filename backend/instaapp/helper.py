@@ -14,7 +14,7 @@ long_term_access_token = os.getenv('long_term_access_token')
 def check_instagram_credentials(username, password):
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)  # Headless = True for no browser UI
+            browser = p.chromium.launch(headless=True)  # Headless = True for no browser UI
             context = browser.new_context()
             page = context.new_page()
 
@@ -62,12 +62,11 @@ def fetch_user_instagram_profile_data(username_to_discover):
         print("Error:", response.status_code, response.text)
         return None        
 
-def save_user_profile(username,password, full_name, followers, post_count, profile_img):
+def save_user_profile(username, full_name, followers, post_count, profile_img):
     user_obj, created = Instagram_User.objects.get_or_create(username=username)
     user_obj.full_name = full_name
     user_obj.followers = followers
     user_obj.posts = post_count
-    user_obj.password = password
 
     if profile_img:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")

@@ -19,12 +19,17 @@ from .models import Instagram_User,InstagramPost
 from .serializers import InstagramUserSerializer, InstagramPostSerializer
 from django.shortcuts import get_object_or_404
 import asyncio
-
+from cryptography.fernet import Fernet
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from openai import OpenAI, AuthenticationError, RateLimitError, OpenAIError
 from .serializers import CarouselGeneratorSerializer
+from django.conf import settings
+fernet = Fernet(settings.SECRET_ENCRYPTION_KEY)
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') 
+
 
 
 class CustomSignInView(APIView):
@@ -68,15 +73,14 @@ class CustomSignInView(APIView):
                     Instagram_User.objects.create(
                         user=user,
                         username=username,
-                        password=password  # 🔒 WARNING: Only store this if you absolutely need to.
-                    )
-
+                        password=encrypt_password(password)  # 🔒 WARNING: Only store this if you absolutely need to.
+                    )                    
                     if user:
                         refresh = RefreshToken.for_user(user)
                         return Response({
                             "status": "success",
-                            "access": str(refresh.access_token),
                             "refresh": str(refresh),
+                            "access": str(refresh.access_token),
                         }, status=status.HTTP_201_CREATED)
                     else:
                         return Response({
@@ -118,7 +122,6 @@ class InstagramFetchData(APIView):
                         if business_discovery_res:
                             save_user_profile(
                                 insta_username,
-                                insta_password,
                                 business_discovery_res.get("name"),
                                 business_discovery_res.get("followers_count"),
                                 business_discovery_res.get("media_count"),
@@ -145,10 +148,6 @@ class InstagramFetchData(APIView):
                 {"error": f"Failed to fetch Instagram data: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-            
-    
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') 
-
 # Assume `client` is your OpenAI client instance
 client = OpenAI(api_key=OPENAI_API_KEY)  # or use settings.ENV
 
@@ -280,3 +279,6 @@ def get_user_posts(request):
     posts = InstagramPost.objects.filter(user=user).order_by('-likes')[:3]
     serializer = InstagramPostSerializer(posts, many=True)
     return Response(serializer.data)
+
+def encrypt_password(plain_text):
+    return fernet.encrypt(plain_text.encode()).decode()
