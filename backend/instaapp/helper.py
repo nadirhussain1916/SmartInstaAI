@@ -1,19 +1,20 @@
 from playwright.sync_api import sync_playwright
-from threading import Thread
 from .models import Instagram_User,InstagramPost
 import requests
 import datetime
 from django.core.files.base import ContentFile
-from asgiref.sync import sync_to_async
-from django.core.management import call_command
-from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from .models import Instagram_User, InstagramPost
+import os 
+from urllib.parse import urlparse
+from dateutil.parser import parse
+ig_user_id = os.getenv('instagram_account_id') 
+long_term_access_token = os.getenv('long_term_access_token') 
 
 def check_instagram_credentials(username, password):
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)  # Headless = True for no browser UI
+            browser = p.chromium.launch(headless=False)  # Headless = True for no browser UI
             context = browser.new_context()
             page = context.new_page()
 
@@ -43,113 +44,25 @@ def check_instagram_credentials(username, password):
             
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {str(e)}"}
-        
+      
+def fetch_user_instagram_profile_data(username_to_discover):
 
-def fetch_instagram_data(username,password):
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)  # Headless = True for no browser UI
-            context = browser.new_context()
-            page = context.new_page()
 
-            # 1. Go to Instagram login page
-            page.goto("https://www.instagram.com/accounts/login/")
-            page.wait_for_timeout(3000)
+    url = f"https://graph.facebook.com/v23.0/{ig_user_id}"
+    params = {
+        "fields": f"business_discovery.username({username_to_discover}){{username, name, profile_picture_url, followers_count, follows_count, media_count}}",
+        "access_token": long_term_access_token
+    }
 
-            # 2. Fill login credentials
-            page.fill('input[name="username"]', username)
-            page.fill('input[name="password"]', password)
+    response = requests.get(url, params=params)
 
-            # 3. Click login button
-            page.click('button[type="submit"]')
-            page.wait_for_timeout(6000)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Error:", response.status_code, response.text)
+        return None        
 
-            # Wait for login to complete (check for redirect or profile icon)
-            page.wait_for_timeout(7000)
-
-            # Step 2: Go to target user profile
-            page.goto(f"https://www.instagram.com/{username}/")
-            # container = page.locator('div.x1iyjqo2.xh8yej3')
-            # # 2. Find all child divs inside this container
-            # child_divs = container.locator('div')
-
-            # # 3. Loop through them and click those that contain a span with the desired text
-            # count = child_divs.count()
-
-            # for i in range(count):
-            #     div = child_divs.nth(i)
-            #     try:
-            #         # Check if this div contains the target span
-            #         span = div.locator('span.x1lliihq.x193iq5w.x6ikm8r.x10wlt62.xlyipyv.xuxw1ft')
-            #         if span.is_visible() and span.inner_text().strip().lower() == 'profile':
-            #             div.click()
-            #             break  # click only the first matching one, or remove break to click all
-            #     except:
-            #         continue
-                
-            # Step 2: Go to target user profile
-            page.wait_for_selector('header.xrvj5dj', timeout=10000)
-
-            # Step 3: Get profile image from inside specific section
-            try:
-                profile_section = page.locator('section.x6s0dn4')
-                profile_img = profile_section.locator('button[title="Change profile photo"] img').first.get_attribute("src")
-            except:
-                profile_img = "Not found"
-
-            # Step 4: Get posts, followers, following counts
-            try:
-                stats_section = page.locator('section.xc3tme8 ul li')
-                post_count = stats_section.nth(0).inner_text().split()[0]
-                followers = stats_section.nth(1).inner_text().split()[0]
-                following = stats_section.nth(2).inner_text().split()[0]
-            except:
-                post_count = followers = following = "N/A"
-
-            # Step 5: Get full name from specific section
-            try:
-                full_name_section = page.locator('section.xc3tme8.x1vnunu7')
-                full_name = full_name_section.locator('h1, h2, span').first.inner_text()
-            except:
-                full_name = "Not found"
-            
-                # Step 6: Click post section to reveal posts
-            try:
-                outer_div = page.locator('div.html-div.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl').first
-                inner_clickable = outer_div.locator('div.html-div.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x78zum5.x124el2t.x1q0q8m5.x1co6499.x17zd0t2').first
-                click_target = inner_clickable.locator('div.html-div.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x6s0dn4.x78zum5.x1r8uery.x1iyjqo2.xs83m0k.xl56j7k').first
-                click_target.click()
-                page.wait_for_timeout(2000)
-            except Exception as e:
-                print(f"Click post section failed: {e}")
-
-            # Step 7: Extract post links
-            post_links = []
-            try:
-                post_grid = page.locator('div.xg7h5cd.x1n2onr6')
-                posts = post_grid.locator('div.x1lliihq.x1n2onr6.xh8yej3.x4gyw5p.x14z9mp.xzj7kzq.xbipx2v.x1j53mea')
-                count = posts.count()
-                for i in range(count):
-                    href = posts.nth(i).locator('a').get_attribute("href")
-                    if href:
-                        post_links.append("https://www.instagram.com" + href)
-            except Exception as e:
-                print(f"Fetching post links failed: {e}")
-            browser.close
-            return {
-                "status": "success",
-                "full_name": full_name,
-                "profile_image": profile_img,
-                "post_count": post_count,
-                "followers": followers,
-                "following": following,
-                "post_links": post_links,
-            }
-
-    except Exception as e:
-        print(f"❌ Error saving IG data: {e}")
-
-def save_user_and_posts(username,password, full_name, followers, post_count, profile_img, post_links):
+def save_user_profile(username,password, full_name, followers, post_count, profile_img):
     user_obj, created = Instagram_User.objects.get_or_create(username=username)
     user_obj.full_name = full_name
     user_obj.followers = followers
@@ -165,88 +78,85 @@ def save_user_and_posts(username,password, full_name, followers, post_count, pro
 
     user_obj.save()
 
-    InstagramPost.objects.filter(user=user_obj).delete()
-    InstagramPost.objects.bulk_create([
-        InstagramPost(user=user_obj, post_url=link) for link in post_links
-    ])
     print(f"\n✅ IG data saved for: {username}")
    
+def get_top_instagram_posts(username_to_discover, max_posts=50, top_n=3):
 
-def get_post_image_and_likes(url):
+    url = f"https://graph.facebook.com/v23.0/{ig_user_id}"
+    fields = (
+        f"business_discovery.username({username_to_discover})"
+        f"{{media.limit({max_posts})"
+        f"{{id,media_type,media_url,like_count,comments_count,timestamp}}}}"
+    )
+
+    params = {
+        "fields": fields,
+        "access_token": long_term_access_token
+    }
+
+    response = requests.get(url, params=params)
+
+    if response.status_code == 200:
+        media_data = response.json().get("business_discovery", {}).get("media", {}).get("data", [])
+        
+        # Sort by like_count descending
+        sorted_posts = sorted(media_data, key=lambda x: x.get("like_count", 0), reverse=True)
+        
+        return sorted_posts[:top_n]
+    else:
+        print("Error:", response.status_code, response.text)
+        return None
+
+def download_and_save_media(url, filename=None):
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-
-            page.goto(url, timeout=60000)
-
-            # Try to locate images
-            page.wait_for_selector("img", timeout=15000)
-            all_imgs = page.locator("img")
-
-            count = all_imgs.count()
-            img_src = ""
-
-            for i in range(count):
-                alt_text = all_imgs.nth(i).get_attribute("alt")
-                if alt_text and alt_text.startswith("Photo by"):
-                    img_src = all_imgs.nth(i).get_attribute("src")
-                    break
-
-            if not img_src and count > 0:
-                img_src = all_imgs.first.get_attribute("src") or ""
-
-            # Locate likes
-            try:
-                page.wait_for_selector('span.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1hl2dhg.x16tdsg8.x1vvkbs', timeout=15000)
-                likes_text = page.locator('span.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1hl2dhg.x16tdsg8.x1vvkbs').first.inner_text()
-                likes = int(likes_text.replace(',', '').split()[0]) if likes_text and likes_text.split()[0].isdigit() else 0
-            except:
-                likes = 0
-
-            browser.close()
-            return img_src, likes
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Use custom filename or fallback to last URL part
+            if not filename:
+                filename = urlparse(url).path.split("/")[-1].split("?")[0]
+            return ContentFile(response.content, name=filename)
     except Exception as e:
-        print(f"Error fetching post details: {e}")
-        return "", 0
+        print("Download error:", e)
+    return None
 
 def get_and_save_post_detail(username):
     user = get_object_or_404(Instagram_User, username=username)
-    
-    posts = InstagramPost.objects.filter(user=user)
-    
-    for post in posts:
-        print(f"Processing: {post.post_url}")
-        
-        try:
-            img_url, likes = get_post_image_and_likes(post.post_url)
 
-            # Default fallback values
-            if not img_url:
-                img_url = ""
-            if not likes or not likes.isdigit():
-                likes = 0
-            else:
-                likes = int(likes.replace(",", ""))
+    # Delete old posts
+    InstagramPost.objects.filter(user=user).delete()
 
-            shortcode = post.post_url.rstrip('/').split('/')[-1]
-            timestamp = now().strftime("%Y%m%d%H%M%S")
-            filename = f"{shortcode}_{timestamp}_post.jpg"
+    top_posts = get_top_instagram_posts(username)
 
-            if img_url:
-                img_response = requests.get(img_url)
-                if img_response.status_code == 200:
-                    post.thumbnail_url.save(filename, ContentFile(img_response.content), save=False)
-                else:
-                    print(f"⚠️ Could not download image for {shortcode}")
-            else:
-                print(f"⚠️ No image found for {shortcode}")
+    for post in top_posts:
+        media_type = post.get("media_type", "unknown").lower()
+        if media_type == "carousel_album":
+            media_type = "carousel"
+        elif media_type not in ["image", "video", "reel", "carousel"]:
+            media_type = "unknown"
 
-            post.media_url = img_url
-            post.likes = likes
-            post.shortcode = shortcode
-            post.save()
-            print(f"✅ Saved: {shortcode}")
+        media_url = post.get("media_url")
+        post_id = post.get("id")
+        if not media_url or not post_id:
+            continue  # Skip if required fields are missing
 
-        except Exception as e:
-            print(f"❌ Error while processing {post.post_url}: {e}")
+        # Set filename using post ID and extension from URL
+        extension = media_url.split("?")[0].split(".")[-1]  # e.g., jpg, mp4
+        filename = f"{post_id}_{media_type}.{extension}"
+
+
+        media_file = download_and_save_media(media_url, filename)
+
+        instagram_post = InstagramPost.objects.create(
+            user=user,
+            post_url=f"https://www.instagram.com/p/{post_id}/",
+            media_url=media_url,
+            post_type=media_type,
+            likes=post.get("like_count"),
+            comments=post.get("comments_count"),
+            timestamp=parse(post.get("timestamp")) if post.get("timestamp") else None,
+            shortcode=post_id,
+        )
+
+        if media_file:
+            instagram_post.thumbnail_url.save(media_file.name, media_file)
+

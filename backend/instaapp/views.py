@@ -1,14 +1,7 @@
-# instagram_app/views.py
-
-import datetime
-import requests
-import instaloader
 from rest_framework.permissions import IsAuthenticated
-from django.core.files.base import ContentFile
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from instaapp.helper import check_instagram_credentials
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes
 import threading
@@ -16,7 +9,7 @@ import os
 from rest_framework_simplejwt.tokens import RefreshToken
 from instaapp.models import Instagram_User
 from .serializers import InstagramUserSerializer
-from instaapp.helper import fetch_instagram_data,get_and_save_post_detail
+from instaapp.helper import save_user_profile,fetch_user_instagram_profile_data,check_instagram_credentials,get_and_save_post_detail
 # views.py
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -25,92 +18,13 @@ from rest_framework import status
 from .models import Instagram_User,InstagramPost
 from .serializers import InstagramUserSerializer, InstagramPostSerializer
 from django.shortcuts import get_object_or_404
-import instaloader
-from django.core.files.base import ContentFile
-import requests
-import datetime
-from instaapp.helper import save_user_and_posts
 import asyncio
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from openai import OpenAI, AuthenticationError, RateLimitError, OpenAIError
 from .serializers import CarouselGeneratorSerializer
-from instaloader.exceptions import (
-    QueryReturnedNotFoundException,
-    LoginRequiredException,
-    BadResponseException,
-    ConnectionException,
-    InstaloaderException
-)
-
-class InstagramUserAPIView(APIView):
-    def post(self, request):
-        username = request.data.get('username')
-        if not username or '@' in username:
-            return Response(
-                {"error": "Please enter a valid Instagram username."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        loader = instaloader.Instaloader()
-
-        try:
-            profile = instaloader.Profile.from_username(loader.context, username)
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            pic_url = profile.profile_pic_url
-            response = requests.get(pic_url)
-            file_name = f"{username}_profile_{timestamp}.jpg"
-
-            # Create or update user
-            ig_user, _ = Instagram_User.objects.get_or_create(username=username)
-            ig_user.full_name = profile.full_name
-            ig_user.followers = profile.followers
-            ig_user.posts = profile.mediacount
-
-            # Save image
-            if response.status_code == 200:
-                ig_user.profile_pic.save(file_name, ContentFile(response.content), save=True)
-
-            ig_user.save()
-            serializer = InstagramUserSerializer(ig_user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except QueryReturnedNotFoundException:
-            return Response(
-                {"error": "Instagram username not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        except LoginRequiredException:
-            return Response(
-                {"error": "Instagram requires login to access this data."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        except BadResponseException as e:
-            return Response(
-                {"error": f"Bad response from Instagram: {str(e)}"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        except ConnectionException:
-            return Response(
-                {"error": "Network error. Please try again later."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        except InstaloaderException as e:
-            return Response(
-                {"error": f"Instaloader error: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        except Exception as e:
-            return Response(
-                {"error": f"Unexpected error: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 
 class CustomSignInView(APIView):
@@ -197,18 +111,24 @@ class InstagramFetchData(APIView):
             # ✅ Define your background task
             def background_task():
                 try:
-                    res = fetch_instagram_data(insta_username, insta_password)
-                    if res.get("status") == "success":
-                        save_user_and_posts(
-                            insta_username,
-                            insta_password,
-                            res.get("full_name"),
-                            res.get("followers"),
-                            res.get("post_count"),
-                            res.get("profile_image"),
-                            res.get("post_links")
-                        )
-                    print("Instagram data fetched and saved in background.")
+                    res = fetch_user_instagram_profile_data(insta_username)
+                    if res:
+                        business_discovery_res = res.get("business_discovery")
+                        
+                        if business_discovery_res:
+                            save_user_profile(
+                                insta_username,
+                                insta_password,
+                                business_discovery_res.get("name"),
+                                business_discovery_res.get("followers_count"),
+                                business_discovery_res.get("media_count"),
+                                business_discovery_res.get("profile_picture_url"),
+                            )
+                            print("Instagram data fetched and saved in background.")
+                        else:
+                            print("⚠️ 'business_discovery' not found in response.")
+                    else:
+                        print("❌ Failed to fetch Instagram profile data.")
                 except Exception as e:
                     print(f"Background task error: {e}")
                 get_and_save_post_detail(insta_username)
