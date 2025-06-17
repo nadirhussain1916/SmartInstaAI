@@ -104,7 +104,6 @@ class InstagramFetchData(APIView):
             # Fetch Instagram user details using Django username
             insta_user = Instagram_User.objects.get(username=auth_username)
             insta_username = insta_user.username
-            insta_password = insta_user.password
         except Instagram_User.DoesNotExist:
             return Response(
                 {"error": "Instagram credentials not found for this user."},
