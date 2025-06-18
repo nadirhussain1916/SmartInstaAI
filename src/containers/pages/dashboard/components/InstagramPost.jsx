@@ -20,7 +20,6 @@ function InstagramPost({ post }) {
                 },
             }}
         >
-            {/* Media Preview */}
             <Box sx={{ position: 'relative', aspectRatio: '1 / 1', overflow: 'hidden' }}>
                 <CardMedia
                     component="img"
@@ -67,20 +66,40 @@ function InstagramPost({ post }) {
 
             {/* Content */}
             <CardContent sx={{ p: 2 }}>
-                <Typography
-                    variant="body1"
-                    sx={{
-                        color: 'text.primary',
-                        fontWeight: 600,
-                        mb: 0.5,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {post?.title}
-                </Typography>
+                {post?.title ? (
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: 'text.primary',
+                            fontWeight: 600,
+                            mb: 0.5,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {post.title}
+                    </Typography>
+                ) : (
+                    <Typography
+                        variant="body1"
+                        component="a"
+                        href={post?.post_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                            color: 'primary.main',
+                            fontWeight: 600,
+                            mb: 0.5,
+                            textDecoration: 'none',
+                            display: 'inline-block',
+                        }}
+                    >
+                        View Post
+                    </Typography>
+                )}
+
                 <Typography
                     variant="caption"
                     sx={{
@@ -97,7 +116,7 @@ function InstagramPost({ post }) {
 
                 {/* Metrics */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems:'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <FavoriteBorder sx={{ fontSize: 16, color: '#FF0000' }} />
                             <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>

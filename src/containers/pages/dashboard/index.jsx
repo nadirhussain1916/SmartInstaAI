@@ -15,8 +15,6 @@ function Dashboard() {
       >
         <InstagramPostsList />
       </Box>
-
-      {/* Right Panel - Chat Interface */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <ChatInterface />
       </Box>
