@@ -157,6 +157,8 @@ async def process_inspiration(inspiration):
     await asyncio.sleep(0.1)
     return f"Inspired by: {inspiration}" if inspiration else ""
 
+
+import re
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_carousel(request):
@@ -191,13 +193,8 @@ def generate_carousel(request):
 
         user_prompt += f"""
 
-        Please generate exactly {slides} slides of content. Format your response as a numbered list where each number represents one slide's content.
-
-        Example format:
-        1. [Hook content for slide 1]
-        2. [Content for slide 2]
-        ...
-        {slides}. [CTA content for final slide]
+        Please generate exactly {slides} slides of content. Return ONLY the slide contents without any numbering or "Slide X" prefixes.
+        Each slide's content should be separated by two newlines.
         """
 
         response = client.chat.completions.create(
@@ -212,11 +209,16 @@ def generate_carousel(request):
 
         content = response.choices[0].message.content.strip()
 
-        # No parsing, just return content as string
-        if content.count('\n') < slides - 1:
+        # Split into slides based on double newlines
+        slide_contents = [slide.strip() for slide in content.split('\n\n') if slide.strip()]
+
+        if len(slide_contents) != slides:
             return Response({
-                'error': f'Expected around {slides} points, but got fewer. Please try again.'
+                'error': f'Generated {len(slide_contents)} slides but expected {slides}. Please try again.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Join all slides with double newlines for the final output
+        final_string = "\n\n".join(slide_contents)
 
         return Response({
             'success': True,
@@ -225,7 +227,7 @@ def generate_carousel(request):
                 'description': description,
                 'slides': slides,
                 'inspiration': inspiration,
-                'slide_contents': content
+                'slide_contents': final_string
             }
         }, status=status.HTTP_200_OK)
 
@@ -240,7 +242,6 @@ def generate_carousel(request):
 
     except Exception as e:
         return Response({'error': f'Unexpected error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
