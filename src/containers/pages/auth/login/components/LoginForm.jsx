@@ -8,6 +8,8 @@ import {
   Typography,
   InputAdornment,
   Avatar,
+  Box,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -42,7 +44,7 @@ function LoginPage({ isOpen, onClose }) {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const[ getData ] = useUserInstagramPostDataMutation();
+  const [getData] = useUserInstagramPostDataMutation();
 
   const handleSubmit = async (values, { setSubmitting }) => {
     setSubmitting(true);
@@ -53,9 +55,9 @@ function LoginPage({ isOpen, onClose }) {
 
     if (loginResp?.data) {
       dispatch(onLoggedIn(loginResp?.data));
-       getData({ ...values });
-      if(data){
-       navigate('/');
+      getData({ ...values });
+      if (data) {
+        navigate('/');
       }
       onClose();
     } else {
@@ -201,7 +203,14 @@ function LoginPage({ isOpen, onClose }) {
                       background: 'linear-gradient(to right, #a855f7, #ec4899, #fb923c)',
                     }}
                   >
-                    {isSubmitting || loading ? 'Logging in...' : 'Login'}
+                    {isSubmitting || loading ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CircularProgress size={20} color="inherit" />
+                        Logging in...
+                      </Box>
+                    ) : (
+                      'Login'
+                    )}
                   </Button>
 
                   <Typography
