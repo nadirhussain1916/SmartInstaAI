@@ -137,9 +137,12 @@ def get_and_save_post_detail(username):
         post_id = post.get("id")
         if not media_url or not post_id:
             continue  # Skip if required fields are missing
-
+        # Use .jpg for image posts, otherwise extract the extension from media_url
+        if media_type == "image":
+            extension = "jpg"
+        else:
         # Set filename using post ID and extension from URL
-        extension = media_url.split("?")[0].split(".")[-1]  # e.g., jpg, mp4
+            extension = media_url.split("?")[0].split(".")[-1]  # e.g., jpg, mp4
         filename = f"{post_id}_{media_type}.{extension}"
 
 
