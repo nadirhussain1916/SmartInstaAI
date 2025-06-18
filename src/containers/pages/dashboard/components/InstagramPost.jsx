@@ -5,8 +5,7 @@ import dayjs from 'dayjs';
 import image from '@assets/dummy.jpg';
 
 function InstagramPost({ post }) {
-    console.log('post', post);
-    
+
     return (
         <Card
             elevation={1}
@@ -25,7 +24,7 @@ function InstagramPost({ post }) {
             <Box sx={{ position: 'relative', aspectRatio: '1 / 1', overflow: 'hidden' }}>
                 <CardMedia
                     component="img"
-                    image={image}
+                    image={`http://127.0.0.1:8000/${post?.thumbnail_url}`}
                     alt=''
                     sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

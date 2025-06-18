@@ -17,6 +17,7 @@ import { NearMeRounded } from '@mui/icons-material';
 import { useCreateChatMutation } from '@/services/private/chat';
 import useAuth from '@/hooks/useAuth';
 import { useSelector } from 'react-redux';
+import { useAuthorizedQuery } from '@/services/private/auth';
 
 const ChatSchema = Yup.object({
   description: Yup.string().required('Description is required'),
@@ -27,10 +28,9 @@ function ChatInterface() {
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [createChat] = useCreateChatMutation();
-  const slides = 2;
 
   const { handleLogout } = useAuth();
-  const { user } = useSelector(state => state.auth);
+  const { data } = useAuthorizedQuery();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -60,7 +60,6 @@ function ChatInterface() {
     const payload = {
       ...values,
       content_type: contentType,
-      slides,
     };
 
     const response = await createChat(payload).unwrap();
@@ -119,7 +118,7 @@ function ChatInterface() {
         </Box>
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar
-            src={user?.profile_pic}
+            src={data?.profile_pic}
             sx={{ width: 40, height: 40, cursor: 'pointer' }}
             onClick={handleAvatarClick}
           />
@@ -127,9 +126,9 @@ function ChatInterface() {
             <MenuItem onClick={handleAppLogout}>Logout</MenuItem>
           </Menu>
           <Box>
-            <Typography fontWeight={600}>{user.full_name}</Typography>
+            <Typography fontWeight={600}>{data?.full_name}</Typography>
             <Typography fontSize={14} color="text.secondary">
-              {user?.role || 'Content Creator'}
+              {data?.role || 'Content Creator'}
             </Typography>
           </Box>
         </Box>
