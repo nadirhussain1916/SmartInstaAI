@@ -212,29 +212,10 @@ def generate_carousel(request):
 
         content = response.choices[0].message.content.strip()
 
-        # Parse numbered list
-        slide_contents = []
-        lines = content.split('\n')
-        current_slide = ""
-
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-
-            if line[0].isdigit() and '.' in line:
-                if current_slide:
-                    slide_contents.append(current_slide.strip())
-                current_slide = line.split('.', 1)[1].strip()
-            else:
-                current_slide += " " + line
-
-        if current_slide:
-            slide_contents.append(current_slide.strip())
-
-        if len(slide_contents) != slides:
+        # No parsing, just return content as string
+        if content.count('\n') < slides - 1:
             return Response({
-                'error': f'Generated {len(slide_contents)} slides but expected {slides}. Please try again.'
+                'error': f'Expected around {slides} points, but got fewer. Please try again.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
@@ -244,7 +225,7 @@ def generate_carousel(request):
                 'description': description,
                 'slides': slides,
                 'inspiration': inspiration,
-                'slide_contents': slide_contents
+                'slide_contents': content
             }
         }, status=status.HTTP_200_OK)
 
