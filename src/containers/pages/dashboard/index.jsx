@@ -10,7 +10,6 @@ function Dashboard() {
         sx={{
           width: 360,
           flexShrink: 0,
-          display: { xs: 'none', lg: 'block' },
           bgcolor: 'white',
         }}
       >
@@ -20,41 +19,6 @@ function Dashboard() {
       {/* Right Panel - Chat Interface */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <ChatInterface />
-      </Box>
-
-      {/* Mobile Toggle Button for Posts */}
-      <Box
-        sx={{
-          display: { lg: 'none' },
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          zIndex: 20,
-        }}
-      >
-        <Button
-          sx={{
-            width: 40,
-            height: 40,
-            minWidth: 0,
-            p: 0,
-            bgcolor: 'white',
-            borderRadius: 2,
-            boxShadow: 3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: 'linear-gradient(to right, #ec4899, #f97316)',
-            }}
-          />
-        </Button>
       </Box>
     </Box>
   );
