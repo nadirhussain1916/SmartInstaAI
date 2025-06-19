@@ -212,10 +212,7 @@ def generate_carousel(request):
         # Split into slides based on double newlines
         slide_contents = [slide.strip() for slide in content.split('\n\n') if slide.strip()]
 
-        if len(slide_contents) != slides:
-            return Response({
-                'error': f'Generated {len(slide_contents)} slides but expected {slides}. Please try again.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
         # Join all slides with double newlines for the final output
         final_string = "\n\n".join(slide_contents)
