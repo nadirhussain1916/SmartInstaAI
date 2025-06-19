@@ -156,6 +156,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+# secret key for encrypt or decrypt pasword
+SECRET_ENCRYPTION_KEY = os.environ.get('FERNET_KEY')
 
 # Instagram OAuth2 settings
 SOCIAL_AUTH_INSTAGRAM_KEY = "1717476175794446"        # Client ID
