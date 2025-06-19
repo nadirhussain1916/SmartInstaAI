@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Card, CardMedia, CardContent } from '@mui/material';
 import { CalendarMonth, FavoriteBorder, Message } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import image from '@assets/dummy.jpg';
+import { API_URL } from '@/utilities/constants';
 
 function InstagramPost({ post }) {
 
@@ -23,7 +23,7 @@ function InstagramPost({ post }) {
             <Box sx={{ position: 'relative', aspectRatio: '1 / 1', overflow: 'hidden' }}>
                 <CardMedia
                     component="img"
-                    image={`http://127.0.0.1:8000/${post?.thumbnail_url}`}
+                    image={`${API_URL}${post?.thumbnail_url}`}
                     alt=''
                     sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

@@ -7,7 +7,7 @@ import {
   IconButton,
   Button,
   Menu,
-  MenuItem
+  MenuItem,
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { Formik, Form } from 'formik';
@@ -16,7 +16,6 @@ import ChatMessage from './ChatMessage';
 import { NearMeRounded } from '@mui/icons-material';
 import { useCreateChatMutation } from '@/services/private/chat';
 import useAuth from '@/hooks/useAuth';
-import { useSelector } from 'react-redux';
 import { useAuthorizedQuery } from '@/services/private/auth';
 
 const ChatSchema = Yup.object({
@@ -28,7 +27,6 @@ function ChatInterface() {
   const [chatMessages, setChatMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [createChat] = useCreateChatMutation();
-
   const { handleLogout } = useAuth();
   const { data } = useAuthorizedQuery();
 
@@ -42,56 +40,76 @@ function ChatInterface() {
     handleMenuClose();
   };
 
- const handleSubmit = async (values, { resetForm }) => {
-  const timestamp = new Date().toLocaleTimeString();
+  const handleSubmit = async (values, { resetForm }) => {
+    const timestamp = new Date().toLocaleTimeString();
 
-  // 1. User message
-  const userMessage = {
-    id: Date.now(),
-    content: values.description,
-    type: 'user',
-    timestamp,
-  };
-  setChatMessages(prev => [...prev, userMessage]);
-  resetForm();
-  setIsTyping(true);
-
-  try {
-    const payload = {
-      ...values,
-      content_type: contentType,
+    // User message
+    const userMessage = {
+      id: Date.now(),
+      content: values.description,
+      type: 'user',
+      timestamp,
     };
 
-    const response = await createChat(payload).unwrap();
+    setChatMessages(prev => [...prev, userMessage]);
+    resetForm();
+    setIsTyping(true);
 
-    // 2. Extract slide messages
-    const slidesArray = response?.carousel_content?.slide_contents || [];
-    const slideMessages = slidesArray.map((slide, idx) => ({
-      id: Date.now() + idx + 1,
-      content: slide,
-      type: 'bot',
-      timestamp: new Date().toLocaleTimeString(),
-    }));
+    try {
+      const payload = {
+        ...values,
+        content_type: contentType,
+      };
 
-    setChatMessages(prev => [...prev, ...slideMessages]);
-  } catch (error) {
-    setChatMessages(prev => [
-      ...prev,
-      {
-        id: Date.now() + 1000,
-        content: 'Something went wrong. Please try again.',
-        type: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
-  }
+      const response = await createChat(payload).unwrap();
 
-  setIsTyping(false);
-};
+      const slidesRaw = response?.carousel_content?.slide_contents;
+      const slideMessages = [];
+
+      if (Array.isArray(slidesRaw)) {
+        slidesRaw.forEach((slide, idx) => {
+          slideMessages.push({
+            id: Date.now() + idx + 1,
+            content: slide,
+            type: 'bot',
+            timestamp: new Date().toLocaleTimeString(),
+          });
+        });
+      } else if (typeof slidesRaw === 'string') {
+        slideMessages.push({
+          id: Date.now() + 1,
+          content: slidesRaw,
+          type: 'bot',
+          timestamp: new Date().toLocaleTimeString(),
+        });
+      }
+
+      setChatMessages(prev => [...prev, ...slideMessages]);
+    } catch (error) {
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1000,
+          content: 'Something went wrong. Please try again.',
+          type: 'bot',
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+    }
+
+    setIsTyping(false);
+  };
+
   return (
     <Box display="flex" flexDirection="column" height="100%" bgcolor="white">
       {/* Top Bar */}
-      <Box display='flex' justifyContent='space-between' alignItems='center' p={2} borderBottom="1px solid #e0e0e0">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        p={2}
+        borderBottom="1px solid #e0e0e0"
+      >
         <Box display="flex" gap={2}>
           {['Humble', 'Image', 'Video'].map(type => (
             <Button
@@ -102,13 +120,15 @@ function ChatInterface() {
                 textTransform: 'none',
                 borderRadius: 2,
                 color: contentType === type ? 'white' : 'black',
-                background: contentType === type
-                  ? 'linear-gradient(to right, #a855f7, #ec4899, #fb923c)'
-                  : '#f0f0f0',
-                '&:hover': {
-                  background: contentType === type
+                background:
+                  contentType === type
                     ? 'linear-gradient(to right, #a855f7, #ec4899, #fb923c)'
-                    : '#e0e0e0',
+                    : '#f0f0f0',
+                '&:hover': {
+                  background:
+                    contentType === type
+                      ? 'linear-gradient(to right, #a855f7, #ec4899, #fb923c)'
+                      : '#e0e0e0',
                 },
               }}
             >
@@ -116,6 +136,7 @@ function ChatInterface() {
             </Button>
           ))}
         </Box>
+
         <Box display="flex" alignItems="center" gap={2}>
           <Avatar
             src={data?.profile_pic}
@@ -143,6 +164,7 @@ function ChatInterface() {
             isLatest={index === chatMessages.length - 1}
           />
         ))}
+
         {isTyping && (
           <Box display="flex" justifyContent="flex-start" mb={2}>
             <Box
@@ -160,7 +182,7 @@ function ChatInterface() {
         )}
       </Box>
 
-      {/* Chat Input */}
+      {/* Input Area */}
       <Box p={3} borderTop="1px solid #e0e0e0">
         <Formik
           initialValues={{ description: '' }}
@@ -200,7 +222,8 @@ function ChatInterface() {
                 <IconButton
                   type="submit"
                   sx={{
-                    background: 'linear-gradient(to right, #a855f7, #ec4899, #fb923c)',
+                    background:
+                      'linear-gradient(to right, #a855f7, #ec4899, #fb923c)',
                     color: 'white',
                     width: 48,
                     height: 48,
